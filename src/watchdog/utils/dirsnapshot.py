@@ -347,3 +347,8 @@ class DirectorySnapshot(object):
 
     def __repr__(self):
         return str(self._stat_info)
+
+class EmptyDirectorySnapshot(DirectorySnapshot):
+    def __init__(self):
+        self._stat_info = {}
+        self._inode_to_path = {}

@@ -93,6 +93,7 @@ from watchdog.utils import has_attribute
 from watchdog.utils import unicode_paths
 
 
+EVENT_TYPE_EXISTING = 'existing'
 EVENT_TYPE_MOVED = 'moved'
 EVENT_TYPE_DELETED = 'deleted'
 EVENT_TYPE_CREATED = 'created'
@@ -191,6 +192,19 @@ class FileSystemMovedEvent(FileSystemEvent):
 
 # File events.
 
+class FileExistingEvent(FileSystemEvent):
+    """File system event representing a file already existing on the file system."""
+
+    event_type = EVENT_TYPE_EXISTING
+
+    def __init__(self, src_path):
+        super(FileExistingEvent, self).__init__(src_path)
+
+    def __repr__(self):
+        return "<%(class_name)s: src_path=%(src_path)r>" %\
+               dict(class_name=self.__class__.__name__,
+                    src_path=self.src_path)
+
 
 class FileDeletedEvent(FileSystemEvent):
     """File system event representing file deletion on the file system."""
@@ -249,6 +263,20 @@ class FileMovedEvent(FileSystemMovedEvent):
 
 
 # Directory events.
+
+class DirExistingEvent(FileSystemEvent):
+    """File system event representing a directory already existing on the file system."""
+
+    event_type = EVENT_TYPE_EXISTING
+    is_directory = True
+
+    def __init__(self, src_path):
+        super(DirExistingEvent, self).__init__(src_path)
+
+    def __repr__(self):
+        return ("<%(class_name)s: src_path=%(src_path)r>"
+                ) % (dict(class_name=self.__class__.__name__,
+                          src_path=self.src_path))
 
 
 class DirDeletedEvent(FileSystemEvent):
@@ -329,6 +357,7 @@ class FileSystemEventHandler(object):
         """
         self.on_any_event(event)
         _method_map = {
+            EVENT_TYPE_EXISTING: self.on_existing,
             EVENT_TYPE_MODIFIED: self.on_modified,
             EVENT_TYPE_MOVED: self.on_moved,
             EVENT_TYPE_CREATED: self.on_created,
@@ -344,6 +373,15 @@ class FileSystemEventHandler(object):
             The event object representing the file system event.
         :type event:
             :class:`FileSystemEvent`
+        """
+
+    def on_existing(self, event):
+        """Called when a file or a directory is already existing when starting to observe
+
+        :param event:
+            Event representing file/directory existing.
+        :type event:
+            :class:`DirExistingEvent` or :class:`FileExistingEvent`
         """
 
     def on_moved(self, event):
@@ -453,6 +491,7 @@ class PatternMatchingEventHandler(FileSystemEventHandler):
                            case_sensitive=self.case_sensitive):
             self.on_any_event(event)
             _method_map = {
+                EVENT_TYPE_EXISTING: self.on_existing,
                 EVENT_TYPE_MODIFIED: self.on_modified,
                 EVENT_TYPE_MOVED: self.on_moved,
                 EVENT_TYPE_CREATED: self.on_created,
@@ -536,6 +575,7 @@ class RegexMatchingEventHandler(FileSystemEventHandler):
         if any(r.match(p) for r in self.regexes for p in paths):
             self.on_any_event(event)
             _method_map = {
+                EVENT_TYPE_EXISTING: self.on_existing,
                 EVENT_TYPE_MODIFIED: self.on_modified,
                 EVENT_TYPE_MOVED: self.on_moved,
                 EVENT_TYPE_CREATED: self.on_created,

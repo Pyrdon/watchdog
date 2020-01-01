@@ -17,10 +17,22 @@
 # limitations under the License.
 
 from __future__ import with_statement
+import os
 import threading
 from watchdog.utils import BaseThread
 from watchdog.utils.compat import queue
 from watchdog.utils.bricks import SkipRepeatsQueue
+
+from watchdog.utils.dirsnapshot import (
+    EmptyDirectorySnapshot,
+    DirectorySnapshot,
+    DirectorySnapshotDiff,
+)
+
+from watchdog.events import (
+    FileExistingEvent,
+    DirExistingEvent,
+)
 
 DEFAULT_EMITTER_TIMEOUT = 1    # in seconds.
 DEFAULT_OBSERVER_TIMEOUT = 1   # in seconds.
@@ -78,6 +90,7 @@ class ObservedWatch(object):
 
 
 # Observer classes
+
 class EventEmitter(BaseThread):
     """
     Producer thread base class subclassed by event emitters
@@ -144,6 +157,21 @@ class EventEmitter(BaseThread):
         while self.should_keep_running():
             self.queue_events(self.timeout)
 
+class FileEventEmitter(EventEmitter):
+
+    def run(self):
+        snapshot_diff = DirectorySnapshotDiff(
+            EmptyDirectorySnapshot(),
+            DirectorySnapshot(
+                self.watch.path,
+                self.watch.is_recursive))
+        for file in snapshot_diff.files_created:
+            if os.path.isfile(file):
+                self.queue_event(FileExistingEvent(file))
+            else:
+                self.queue_event(DirExistingEvent(file))
+        while self.should_keep_running():
+            self.queue_events(self.timeout)
 
 class EventDispatcher(BaseThread):
     """

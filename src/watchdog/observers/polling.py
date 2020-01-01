@@ -40,8 +40,8 @@ from functools import partial
 from watchdog.utils import stat as default_stat
 from watchdog.utils.dirsnapshot import DirectorySnapshot, DirectorySnapshotDiff
 from watchdog.observers.api import (
-    EventEmitter,
     BaseObserver,
+    FileEventEmitter,
     DEFAULT_OBSERVER_TIMEOUT,
     DEFAULT_EMITTER_TIMEOUT
 )
@@ -63,7 +63,7 @@ except ImportError:
     from os import listdir as scandir
 
 
-class PollingEmitter(EventEmitter):
+class PollingEmitter(FileEventEmitter):
     """
     Platform-independent emitter that polls a directory to detect file
     system changes.
@@ -71,7 +71,7 @@ class PollingEmitter(EventEmitter):
 
     def __init__(self, event_queue, watch, timeout=DEFAULT_EMITTER_TIMEOUT,
                  stat=default_stat, listdir=scandir):
-        EventEmitter.__init__(self, event_queue, watch, timeout)
+        FileEventEmitter.__init__(self, event_queue, watch, timeout)
         self._snapshot = None
         self._lock = threading.Lock()
         self._take_snapshot = lambda: DirectorySnapshot(
